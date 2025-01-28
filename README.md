@@ -46,7 +46,7 @@ services:
     restart: unless-stopped
 ```
 
-## .env File
+### .env File
 ```.env
 INFLUXDB_URL=http://<INFLUXDB_HOST>:8086
 INFLUXDB_TOKEN=your-influxdb-token

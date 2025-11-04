@@ -8,7 +8,9 @@ services:
       - NET_RAW
     environment:
       - INFLUXDB_URL=${INFLUXDB_URL}
-      - INFLUXDB_TOKEN=${INFLUX_TOKEN}
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
       - INFLUXDB_ORG=${INFLUXDB_ORG}
       - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
+      - SEND_INTERVAL_SEC=60
+      - DEVICE_KEY_FIELD=mac   # or uuid/addr/peer depending on your aioblescan JSON
     restart: unless-stopped

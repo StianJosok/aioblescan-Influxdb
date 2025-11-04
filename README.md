@@ -19,14 +19,18 @@ docker build -t aioblescan-influx:latest .
 ### Run the Container
 ```bash
 docker run --rm \
+  --name aioblescan-influx \
   --network host \
   --cap-add=NET_ADMIN \
   --cap-add=NET_RAW \
-  -e INFLUXDB_URL=http://<INFLUXDB_HOST>:8086 \
-  -e INFLUXDB_TOKEN=your-influxdb-token \
-  -e INFLUXDB_ORG=your-org \
-  -e INFLUXDB_BUCKET=your-bucket \
+  -e INFLUXDB_URL="https://influx.sjnorway.com" \
+  -e INFLUXDB_TOKEN="your-influxdb-token" \
+  -e INFLUXDB_ORG="sjhomelab" \
+  -e INFLUXDB_BUCKET="beer" \
+  -e SEND_INTERVAL_SEC="60" \
+  -e DEVICE_KEY_FIELD="mac" \
   aioblescan-influx
+
 ```
 ## Docker Compose
 ```yaml
@@ -43,6 +47,8 @@ services:
       - INFLUXDB_TOKEN=${INFLUX_TOKEN}
       - INFLUXDB_ORG=${INFLUXDB_ORG}
       - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
+      - SEND_INTERVAL_SEC=60
+      - DEVICE_KEY_FIELD=mac   # or uuid/addr/peer depending on your aioblescan JSO
     restart: unless-stopped
 ```
 

@@ -23,9 +23,9 @@ docker run --rm \
   --network host \
   --cap-add=NET_ADMIN \
   --cap-add=NET_RAW \
-  -e INFLUXDB_URL="https://influx.sjnorway.com" \
+  -e INFLUXDB_URL="https://influx.example.com" \
   -e INFLUXDB_TOKEN="your-influxdb-token" \
-  -e INFLUXDB_ORG="sjhomelab" \
+  -e INFLUXDB_ORG="your_org" \
   -e INFLUXDB_BUCKET="beer" \
   -e SEND_INTERVAL_SEC="60" \
   -e DEVICE_KEY_FIELD="mac" \

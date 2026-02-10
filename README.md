@@ -25,8 +25,8 @@ docker run --rm \
   --cap-add=NET_RAW \
   -e INFLUXDB_URL="https://influx.example.com" \
   -e INFLUXDB_TOKEN="your-influxdb-token" \
-  -e INFLUXDB_ORG="your_org" \
-  -e INFLUXDB_BUCKET="beer" \
+  -e INFLUXDB_ORG="your-org" \
+  -e INFLUXDB_BUCKET="your-bucket" \
   -e SEND_INTERVAL_SEC="60" \
   -e DEVICE_KEY_FIELD="mac" \
   aioblescan-influx

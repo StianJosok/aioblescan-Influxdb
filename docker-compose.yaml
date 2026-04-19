@@ -13,4 +13,5 @@ services:
       - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
       - SEND_INTERVAL_SEC=60
       - DEVICE_KEY_FIELD=mac   # or uuid/addr/peer depending on your aioblescan JSON
+      - LOG_LEVEL=INFO
     restart: unless-stopped

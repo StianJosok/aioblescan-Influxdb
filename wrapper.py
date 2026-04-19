@@ -2,10 +2,16 @@ import os
 import time
 import subprocess
 import json
+import logging
 from typing import Any, Dict, Optional
 
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
+
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+logging.basicConfig(level=getattr(logging, LOG_LEVEL.upper(), logging.INFO),
+                    format="%(asctime)s %(levelname)s %(message)s")
+logger = logging.getLogger(__name__)
 
 INFLUXDB_URL = os.getenv("INFLUXDB_URL", "http://localhost:8086")
 INFLUXDB_TOKEN = os.getenv("INFLUXDB_TOKEN")
@@ -135,24 +141,28 @@ def main() -> None:
     latest_by_device: Dict[str, Dict[str, Any]] = {}
     last_flush = time.monotonic()
 
+    logger.info("Starting aioblescan subprocess")
     proc = subprocess.Popen(
         ["python3", "-u", "-m", "aioblescan", "-T"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
     assert proc.stdout is not None
+    logger.info(f"Subprocess started with PID {proc.pid}")
 
     for raw in iter(proc.stdout.readline, b""):
         now = time.monotonic()
+        logger.debug(f"RAW: {raw}")
 
         try:
             data = json.loads(raw.decode("utf-8", errors="ignore").strip())
             if isinstance(data, dict):
                 k = device_key(data)
+                logger.debug(f"PARSED: {data} | DEVICE KEY: {k}")
                 if k:
                     latest_by_device[k] = data
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"PARSE ERROR: {e} on {raw}")
 
         if now - last_flush >= SEND_INTERVAL_SEC:
             if latest_by_device:
@@ -164,18 +174,20 @@ def main() -> None:
                     try:
                         send_to_influx(d)
                         flushed += 1
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.error(f"INFLUX WRITE ERROR: {e}")
 
                 print(f"Flushed {flushed} points to InfluxDB")
+            else:
+                logger.debug("No devices to flush")
 
             last_flush = now
 
     for d in latest_by_device.values():
         try:
             send_to_influx(d)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"INFLUX WRITE ERROR on final flush: {e}")
 
 
 if __name__ == "__main__":

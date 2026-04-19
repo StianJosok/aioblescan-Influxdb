@@ -16,6 +16,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Set working directory
 WORKDIR /app
 
+RUN pip install setuptools
+
 # Copy and install aioblescan Tilt module
 ADD https://github.com/baronbrew/aioblescan/archive/master.zip /tmp/aioblescan.zip
 RUN unzip /tmp/aioblescan.zip -d /tmp && \

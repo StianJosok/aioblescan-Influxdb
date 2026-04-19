@@ -1,6 +1,6 @@
 services:
   aioblescan-influx:
-    image: aioblescan-influx:latest
+    image: stianjosok/aioblescan-influxdb:latest
     container_name: aioblescan-influx
     network_mode: host
     cap_add:

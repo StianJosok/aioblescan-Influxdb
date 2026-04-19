@@ -8,14 +8,7 @@ This project provides a self-contained Docker image for scanning Bluetooth signa
 - Configurable using environment variables.
 
 ## Usage
-### Clone the repository
-```bash
-git clone https://github.com/StianJosok/aioblescan-Influxdb.git
-```
-### Build the Image
-```bash
-docker build -t aioblescan-influx:latest .
-```
+
 ### Run the Container
 ```bash
 docker run --rm \
@@ -29,14 +22,14 @@ docker run --rm \
   -e INFLUXDB_BUCKET="beer" \
   -e SEND_INTERVAL_SEC="60" \
   -e DEVICE_KEY_FIELD="mac" \
-  aioblescan-influx
+  stianjosok/aioblescan-influxdb:latest
 
 ```
 ## Docker Compose
 ```yaml
 services:
   aioblescan-influx:
-    image: aioblescan-influx:latest
+    image: stianjosok/aioblescan-influxdb:latest
     container_name: aioblescan-influx
     network_mode: host
     cap_add:
@@ -44,11 +37,11 @@ services:
       - NET_RAW
     environment:
       - INFLUXDB_URL=${INFLUXDB_URL}
-      - INFLUXDB_TOKEN=${INFLUX_TOKEN}
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
       - INFLUXDB_ORG=${INFLUXDB_ORG}
       - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
       - SEND_INTERVAL_SEC=60
-      - DEVICE_KEY_FIELD=mac   # or uuid/addr/peer depending on your aioblescan JSO
+      - DEVICE_KEY_FIELD=mac   # or uuid/addr/peer
     restart: unless-stopped
 ```
 

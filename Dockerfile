@@ -1,5 +1,5 @@
 # Base Image
-FROM python:3.9-slim-bookworm
+FROM python:3.13-slim-bookworm
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1

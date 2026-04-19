@@ -22,6 +22,7 @@ docker run --rm \
   -e INFLUXDB_BUCKET="your-bucket" \
   -e SEND_INTERVAL_SEC="60" \
   -e DEVICE_KEY_FIELD="mac" \
+  -e LOG_LEVEL=INFO \
   stianjosok/aioblescan-influxdb:latest
 
 ```
@@ -42,6 +43,7 @@ services:
       - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
       - SEND_INTERVAL_SEC=60
       - DEVICE_KEY_FIELD=mac   # or uuid/addr/peer
+      - LOG_LEVEL=INFO
     restart: unless-stopped
 ```
 

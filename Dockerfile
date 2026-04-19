@@ -1,38 +1,31 @@
-# Base Image
 FROM python:3.13-slim-bookworm
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# Install system dependencies (including libcap2-bin for setcap)
+# Install deps, use, and clean up in one layer
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3-distutils \
     bluez \
-    unzip \
     libcap2-bin \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    curl \
+    unzip \
+    && curl -L https://github.com/baronbrew/aioblescan/archive/master.zip -o /tmp/aioblescan.zip \
+    && unzip /tmp/aioblescan.zip -d /tmp \
+    && apt-get remove -y unzip curl \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/aioblescan.zip
 
-# Set working directory
 WORKDIR /app
 
-RUN pip install setuptools
+# Install Python dependencies
+RUN pip install --no-cache-dir setuptools influxdb-client \
+    && pip install --no-cache-dir /tmp/aioblescan-master \
+    && rm -rf /tmp/aioblescan-master
 
-# Copy and install aioblescan Tilt module
-ADD https://github.com/baronbrew/aioblescan/archive/master.zip /tmp/aioblescan.zip
-RUN unzip /tmp/aioblescan.zip -d /tmp && \
-    cd /tmp/aioblescan-master && \
-    python3 setup.py install && \
-    rm -rf /tmp/aioblescan*
-
-# Install Python InfluxDB client
-RUN pip install influxdb-client
-
-# Add the wrapper script
 COPY wrapper.py /app/wrapper.py
 
-# Expose Bluetooth interface permissions
+# Grant BLE capabilities to python
 RUN setcap 'cap_net_raw,cap_net_admin+eip' $(readlink -f $(which python3))
 
-# Ensure Bluetooth is up and run the wrapper script
 CMD ["bash", "-c", "hciconfig hci0 up && python3 /app/wrapper.py"]

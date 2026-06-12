@@ -149,7 +149,6 @@ def main() -> None:
     proc = subprocess.Popen(
         ["python3", "-u", "-m", "aioblescan", "-T"],
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
     )
     if proc.stdout is None:
         raise RuntimeError("subprocess stdout is None")

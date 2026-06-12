@@ -53,10 +53,6 @@ TILT_COLOR_BY_CODE = {
 }
 
 
-client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG)
-write_api = client.write_api(write_options=SYNCHRONOUS)
-
-
 def device_key(d: Dict[str, Any]) -> Optional[str]:
     return d.get(DEVICE_KEY_FIELD) or d.get("uuid") or d.get("addr") or d.get("peer")
 
@@ -107,7 +103,7 @@ def add_tilt_normalized_fields(point: Point, data: Dict[str, Any]) -> Point:
     return point.field("temp_f", temp_f).field("sg", sg)
 
 
-def send_to_influx(data: Dict[str, Any]) -> None:
+def send_to_influx(write_api: Any, data: Dict[str, Any]) -> None:
     point = Point("bluetooth_data")
 
     # Add color tag (derived from Tilt UUID)
@@ -142,56 +138,65 @@ def main() -> None:
     if not INFLUXDB_TOKEN or not INFLUXDB_ORG or not INFLUXDB_BUCKET:
         raise SystemExit("Missing one of INFLUXDB_TOKEN / INFLUXDB_ORG / INFLUXDB_BUCKET")
 
-    latest_by_device: Dict[str, Dict[str, Any]] = {}
-    last_flush = time.monotonic()
+    client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG)
+    write_api = client.write_api(write_options=SYNCHRONOUS)
 
-    logger.info("Starting aioblescan subprocess")
-    proc = subprocess.Popen(
-        ["python3", "-u", "-m", "aioblescan", "-T"],
-        stdout=subprocess.PIPE,
-    )
-    if proc.stdout is None:
-        raise RuntimeError("subprocess stdout is None")
-    logger.info(f"Subprocess started with PID {proc.pid}")
+    try:
+        latest_by_device: Dict[str, Dict[str, Any]] = {}
+        last_flush = time.monotonic()
 
-    for raw in iter(proc.stdout.readline, b""):
-        now = time.monotonic()
-        logger.debug(f"RAW: {raw}")
+        logger.info("Starting aioblescan subprocess")
+        proc = subprocess.Popen(
+            ["python3", "-u", "-m", "aioblescan", "-T"],
+            stdout=subprocess.PIPE,
+        )
+        if proc.stdout is None:
+            raise RuntimeError("subprocess stdout is None")
+        logger.info(f"Subprocess started with PID {proc.pid}")
 
-        try:
-            data = json.loads(raw.decode("utf-8", errors="ignore").strip())
-            if isinstance(data, dict):
-                k = device_key(data)
-                logger.debug(f"PARSED: {data} | DEVICE KEY: {k}")
-                if k:
-                    latest_by_device[k] = data
-        except Exception as e:
-            logger.error(f"PARSE ERROR: {e} on {raw}")
+        for raw in iter(proc.stdout.readline, b""):
+            now = time.monotonic()
+            logger.debug(f"RAW: {raw}")
 
-        if now - last_flush >= SEND_INTERVAL_SEC:
-            if latest_by_device:
-                snapshot = list(latest_by_device.values())
-                latest_by_device.clear()
+            try:
+                data = json.loads(raw.decode("utf-8", errors="ignore").strip())
+                if isinstance(data, dict):
+                    k = device_key(data)
+                    logger.debug(f"PARSED: {data} | DEVICE KEY: {k}")
+                    if k:
+                        latest_by_device[k] = data
+            except Exception as e:
+                logger.error(f"PARSE ERROR: {e} on {raw}")
 
-                flushed = 0
-                for d in snapshot:
-                    try:
-                        send_to_influx(d)
-                        flushed += 1
-                    except Exception as e:
-                        logger.error(f"INFLUX WRITE ERROR: {e}")
+            if now - last_flush >= SEND_INTERVAL_SEC:
+                if latest_by_device:
+                    snapshot = list(latest_by_device.values())
+                    latest_by_device.clear()
 
-                logger.info(f"Flushed {flushed} points to InfluxDB")
-            else:
-                logger.debug("No devices to flush")
+                    flushed = 0
+                    for d in snapshot:
+                        try:
+                            send_to_influx(write_api, d)
+                            flushed += 1
+                        except Exception as e:
+                            logger.error(f"INFLUX WRITE ERROR: {e}")
 
-            last_flush = now
+                    logger.info(f"Flushed {flushed} points to InfluxDB")
+                else:
+                    logger.debug("No devices to flush")
 
-    for d in latest_by_device.values():
-        try:
-            send_to_influx(d)
-        except Exception as e:
-            logger.error(f"INFLUX WRITE ERROR on final flush: {e}")
+                last_flush = now
+
+        logger.info("Flushing remaining %d device(s) before exit", len(latest_by_device))
+        for d in latest_by_device.values():
+            try:
+                send_to_influx(write_api, d)
+            except Exception as e:
+                logger.error(f"INFLUX WRITE ERROR on final flush: {e}")
+    finally:
+        write_api.close()
+        client.close()
+        logger.info("InfluxDB client closed")
 
 
 if __name__ == "__main__":

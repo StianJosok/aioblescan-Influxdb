@@ -8,10 +8,14 @@ from typing import Any, Dict, Optional
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
 
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
-logging.basicConfig(level=getattr(logging, LOG_LEVEL.upper(), logging.INFO),
-                    format="%(asctime)s %(levelname)s %(message)s")
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+_effective_level = getattr(logging, LOG_LEVEL, None)
+if not isinstance(_effective_level, int):
+    _effective_level = logging.INFO
+    print(f"WARNING: unrecognised LOG_LEVEL={LOG_LEVEL!r}, defaulting to INFO", flush=True)
+logging.basicConfig(level=_effective_level, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
+logger.info("Log level: %s", logging.getLevelName(_effective_level))
 
 INFLUXDB_URL = os.getenv("INFLUXDB_URL", "http://localhost:8086")
 INFLUXDB_TOKEN = os.getenv("INFLUXDB_TOKEN")
@@ -147,7 +151,8 @@ def main() -> None:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-    assert proc.stdout is not None
+    if proc.stdout is None:
+        raise RuntimeError("subprocess stdout is None")
     logger.info(f"Subprocess started with PID {proc.pid}")
 
     for raw in iter(proc.stdout.readline, b""):
@@ -177,7 +182,7 @@ def main() -> None:
                     except Exception as e:
                         logger.error(f"INFLUX WRITE ERROR: {e}")
 
-                print(f"Flushed {flushed} points to InfluxDB")
+                logger.info(f"Flushed {flushed} points to InfluxDB")
             else:
                 logger.debug("No devices to flush")
 

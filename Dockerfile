@@ -28,4 +28,4 @@ COPY wrapper.py /app/wrapper.py
 # Grant BLE capabilities to python
 RUN setcap 'cap_net_raw,cap_net_admin+eip' $(readlink -f $(which python3))
 
-CMD ["bash", "-c", "hciconfig hci0 up && python3 /app/wrapper.py"]
+CMD ["bash", "-c", "hciconfig hci0 up && exec python3 /app/wrapper.py"]

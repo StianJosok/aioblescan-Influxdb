@@ -163,7 +163,7 @@ def main() -> None:
 
         logger.info("Starting aioblescan subprocess")
         proc = subprocess.Popen(
-            ["python3", "-u", "-m", "aioblescan", "-T"],
+            ["python3", "-u", "-m", "aioblescan", "--tilt", "--skip-leader"],
             stdout=subprocess.PIPE,
         )
         if proc.stdout is None:

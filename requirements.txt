@@ -1,1 +1,2 @@
 influxdb-client==1.50.0
+aioblescan==0.2.14

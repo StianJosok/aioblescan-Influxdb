@@ -1,4 +1,5 @@
 import os
+import signal
 import time
 import subprocess
 import json
@@ -138,6 +139,21 @@ def main() -> None:
     if not INFLUXDB_TOKEN or not INFLUXDB_ORG or not INFLUXDB_BUCKET:
         raise SystemExit("Missing one of INFLUXDB_TOKEN / INFLUXDB_ORG / INFLUXDB_BUCKET")
 
+    shutdown = False
+    proc: Optional[subprocess.Popen] = None
+
+    def _handle_shutdown(signum, frame):
+        nonlocal shutdown
+        shutdown = True
+        logger.info("%s received, shutting down", signal.Signals(signum).name)
+        # readline() blocks until the child writes a line; terminating the
+        # child forces EOF so the loop exits even with no BLE traffic.
+        if proc is not None:
+            proc.terminate()
+
+    signal.signal(signal.SIGTERM, _handle_shutdown)
+    signal.signal(signal.SIGINT, _handle_shutdown)
+
     client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG)
     write_api = client.write_api(write_options=SYNCHRONOUS)
 
@@ -153,8 +169,12 @@ def main() -> None:
         if proc.stdout is None:
             raise RuntimeError("subprocess stdout is None")
         logger.info(f"Subprocess started with PID {proc.pid}")
+        if shutdown:  # signal arrived before proc existed
+            proc.terminate()
 
         for raw in iter(proc.stdout.readline, b""):
+            if shutdown:
+                break
             now = time.monotonic()
             logger.debug(f"RAW: {raw}")
 
@@ -194,9 +214,21 @@ def main() -> None:
             except Exception as e:
                 logger.error(f"INFLUX WRITE ERROR on final flush: {e}")
     finally:
+        if proc is not None:
+            if proc.poll() is None:
+                proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait()
+            logger.info("aioblescan exited with code %s", proc.returncode)
         write_api.close()
         client.close()
         logger.info("InfluxDB client closed")
+
+    if not shutdown and proc is not None and proc.returncode != 0:
+        raise SystemExit(f"aioblescan exited unexpectedly with code {proc.returncode}")
 
 
 if __name__ == "__main__":

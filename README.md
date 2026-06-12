@@ -3,7 +3,7 @@
 This project provides a self-contained Docker image for scanning Bluetooth signals using `aioblescan` and forwarding the data to InfluxDB.
 
 ## Features
-- Uses `aioblescan` with the Tilt plugin to scan for Bluetooth signals.
+- Uses [`aioblescan`](https://github.com/frawau/aioblescan) with its Tilt plugin to scan for Bluetooth signals.
 - Parses the output and sends the data to an InfluxDB bucket.
 - Configurable using environment variables.
 
@@ -61,3 +61,12 @@ The image grants `cap_net_raw,cap_net_admin` to the Python binary via file
 capabilities, so the container must run with `--cap-add=NET_ADMIN` and
 `--cap-add=NET_RAW` (as in the examples above). Without them, Python fails
 to start with `operation not permitted`.
+
+## Credits
+- [Baron Brew](https://github.com/baronbrew) wrote the original Tilt plugin for
+  `aioblescan` (since merged upstream). Their work inspired this project — and
+  got me far more involved with GitHub and open source than I would have been
+  otherwise.
+- [François Wautier](https://github.com/frawau) is the author and maintainer of
+  [`aioblescan`](https://github.com/frawau/aioblescan), which this image uses
+  via PyPI.

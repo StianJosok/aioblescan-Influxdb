@@ -18,8 +18,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
+COPY requirements.txt /app/requirements.txt
+
 # Install Python dependencies
-RUN pip install --no-cache-dir setuptools influxdb-client \
+RUN pip install --no-cache-dir -r requirements.txt \
     && pip install --no-cache-dir /tmp/aioblescan-master \
     && rm -rf /tmp/aioblescan-master
 

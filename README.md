@@ -53,4 +53,11 @@ INFLUXDB_URL=http://<INFLUXDB_HOST>:8086
 INFLUXDB_TOKEN=your-influxdb-token
 INFLUXDB_ORG=your-org
 INFLUXDB_BUCKET=your-bucket
+LOG_LEVEL=INFO
 ```
+
+### Required capabilities
+The image grants `cap_net_raw,cap_net_admin` to the Python binary via file
+capabilities, so the container must run with `--cap-add=NET_ADMIN` and
+`--cap-add=NET_RAW` (as in the examples above). Without them, Python fails
+to start with `operation not permitted`.

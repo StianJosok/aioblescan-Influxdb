@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcap2-bin \
     curl \
     unzip \
-    && curl -L https://github.com/baronbrew/aioblescan/archive/master.zip -o /tmp/aioblescan.zip \
+    && curl -L https://github.com/baronbrew/aioblescan/archive/60b9fdb99019eae94d8031c4627a54debb4dd7c6.zip -o /tmp/aioblescan.zip \
     && unzip /tmp/aioblescan.zip -d /tmp \
     && apt-get remove -y unzip curl \
     && apt-get autoremove -y \
@@ -22,8 +22,8 @@ COPY requirements.txt /app/requirements.txt
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir /tmp/aioblescan-master \
-    && rm -rf /tmp/aioblescan-master
+    && pip install --no-cache-dir /tmp/aioblescan-60b9fdb99019eae94d8031c4627a54debb4dd7c6 \
+    && rm -rf /tmp/aioblescan-60b9fdb99019eae94d8031c4627a54debb4dd7c6
 
 COPY wrapper.py /app/wrapper.py
 
